@@ -1,0 +1,15 @@
+[Unit]
+Description=Lichee LCD Framebuffer UI
+After=multi-user.target
+
+[Service]
+Type=simple
+ExecStart=/root/run_lcd_app.sh
+Restart=always
+RestartSec=1
+StandardInput=null
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

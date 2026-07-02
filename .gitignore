@@ -1,0 +1,12 @@
+lcd_app
+fb_progress
+*.o
+*.tar.gz
+*.zip
+*.img
+*.iso
+*.log
+*_ok
+*_ok.*
+*_state_ok*
+*_fb_ok*

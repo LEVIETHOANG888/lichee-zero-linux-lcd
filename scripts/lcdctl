@@ -1,0 +1,145 @@
+#!/bin/sh
+
+APP_DIR="/root/lcd-ui"
+STATE_DIR="/var/lib/lcd-ui"
+STATE_FILE="$STATE_DIR/state"
+PROGRESS_FILE="$STATE_DIR/progress"
+CMD_FILE="/tmp/lcd_cmd"
+FB_PROGRESS="/usr/local/bin/fb_progress"
+
+mkdir -p "$STATE_DIR"
+
+redraw_progress() {
+    if [ -f "$PROGRESS_FILE" ] && [ -x "$FB_PROGRESS" ]; then
+        "$FB_PROGRESS" "$(cat "$PROGRESS_FILE")" 2>/dev/null
+    fi
+}
+
+set_state() {
+    echo "$1" > "$STATE_FILE"
+    echo "$1" > "$CMD_FILE"
+
+    (
+        sleep 0.2
+        redraw_progress
+    ) &
+}
+
+set_progress() {
+    value="$1"
+
+    case "$value" in
+      ""|*[!0-9]*)
+        echo "Progress must be number 0-100"
+        exit 1
+        ;;
+    esac
+
+    if [ "$value" -gt 100 ]; then value=100; fi
+
+    echo "$value" > "$PROGRESS_FILE"
+    redraw_progress
+}
+
+show_status() {
+    echo "LCD UI status"
+    echo "-------------"
+
+    echo -n "service: "
+    systemctl is-active lcd-app.service 2>/dev/null || echo "unknown"
+
+    echo -n "state: "
+    if [ -f "$STATE_FILE" ]; then
+        cat "$STATE_FILE"
+    else
+        echo "ready"
+    fi
+
+    echo -n "progress: "
+    if [ -f "$PROGRESS_FILE" ]; then
+        cat "$PROGRESS_FILE"
+    else
+        echo "0"
+    fi
+
+    echo -n "fb0: "
+    if [ -e /dev/fb0 ]; then
+        echo "OK"
+    else
+        echo "MISSING"
+    fi
+
+    echo -n "app process: "
+    if pidof lcd_app >/dev/null 2>&1 || ps | grep "[l]cd_app" >/dev/null 2>&1; then
+        echo "running"
+    else
+        echo "not running"
+    fi
+}
+
+run_demo() {
+    set_state ready
+    set_progress 0
+    sleep 1
+
+    set_state start
+    for p in 10 25 40 60 80 100; do
+        set_progress "$p"
+        sleep 1
+    done
+
+    set_state info
+    sleep 1
+
+    set_state stop
+    sleep 1
+
+    set_state ready
+    set_progress 0
+}
+
+case "$1" in
+  ready|start|stop|info)
+    set_state "$1"
+    ;;
+
+  progress)
+    set_progress "$2"
+    ;;
+
+  repaint)
+    redraw_progress
+    ;;
+
+  reset)
+    set_state ready
+    set_progress 0
+    ;;
+
+  demo)
+    run_demo
+    ;;
+
+  status)
+    show_status
+    ;;
+
+  help|-h|--help|"")
+    echo "Usage:"
+    echo "  lcdctl ready"
+    echo "  lcdctl start"
+    echo "  lcdctl stop"
+    echo "  lcdctl info"
+    echo "  lcdctl progress 0-100"
+    echo "  lcdctl repaint"
+    echo "  lcdctl reset"
+    echo "  lcdctl demo"
+    echo "  lcdctl status"
+    ;;
+
+  *)
+    echo "Unknown command: $1"
+    echo "Run: lcdctl help"
+    exit 1
+    ;;
+esac
