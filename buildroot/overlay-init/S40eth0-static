@@ -1,0 +1,20 @@
+#!/bin/sh
+
+case "$1" in
+  start)
+    echo "Configuring eth0 static IP..."
+    ip link set eth0 up 2>/dev/null
+    ip addr flush dev eth0 2>/dev/null
+    ip addr add 192.168.10.2/24 dev eth0 2>/dev/null
+    ;;
+  stop)
+    ip addr flush dev eth0 2>/dev/null
+    ;;
+  restart)
+    "$0" stop
+    sleep 1
+    "$0" start
+    ;;
+esac
+
+exit 0

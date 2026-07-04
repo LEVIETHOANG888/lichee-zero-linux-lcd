@@ -1,0 +1,35 @@
+#!/bin/sh
+
+case "$1" in
+  start)
+    echo "Starting LCD UI..."
+
+    mkdir -p /var/lib/lcd-ui
+    [ -f /var/lib/lcd-ui/state ] || echo ready > /var/lib/lcd-ui/state
+    [ -f /var/lib/lcd-ui/progress ] || echo 75 > /var/lib/lcd-ui/progress
+
+    echo 0 > /sys/class/graphics/fbcon/cursor_blink 2>/dev/null
+
+    for c in /sys/class/vtconsole/vtcon*; do
+      if grep -qi "frame buffer" "$c/name" 2>/dev/null; then
+        echo 0 > "$c/bind" 2>/dev/null
+      fi
+    done
+
+    /usr/bin/lcd_app &
+    ;;
+  stop)
+    killall lcd_app 2>/dev/null
+    ;;
+  restart)
+    "$0" stop
+    sleep 1
+    "$0" start
+    ;;
+  *)
+    echo "Usage: $0 {start|stop|restart}"
+    exit 1
+    ;;
+esac
+
+exit 0
