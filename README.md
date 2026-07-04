@@ -105,5 +105,4 @@ Build outputs:
 
 1. Finish stable framebuffer UI
 2. Clean project structure
-3. Push to GitHub
-4. Start LVGL version
+3. Start LVGL version
